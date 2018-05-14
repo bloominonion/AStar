@@ -18,6 +18,7 @@ from pathlib import Path
 from textwrap import dedent
 from os import system
 
+DRAW_PROGRESS = True
 
 class Point(object):
     ''' Point class for storing x/y/z and calculating node distance. '''
@@ -41,12 +42,13 @@ class Point(object):
 
 class Node(binary_heap.heap_item):
     ''' Node class for searching with using A* algorithm. '''
-    def __init__(self, g_cost, h_cost, pt=None):
+    def __init__(self, pt=None):
         self.loc = pt
         self.cell = None
-        self.g_cost = g_cost
-        self.h_cost = h_cost
+        self.g_cost = 0
+        self.h_cost = math.inf
         self.prev_node = None
+        self.neighbors = []
         super(Node, self).__init__()
 
     def __eq__(self, other):
@@ -61,6 +63,12 @@ class Node(binary_heap.heap_item):
                         h_cost : {}
                       '''.format(self.cell, self.loc, self.walkable, self.g_cost, self.h_cost))
 
+    def add_neighbor(self, neighbor):
+        if isinstance(neighbor, Node):
+            self.neighbors.append(neighbor)
+        else:
+            raise TypeError("Neighbors must be of the same type.")
+
     def set_useable(self, value):
         # Sets a node's usability
         self.walkable = bool(value)
@@ -71,6 +79,8 @@ class Node(binary_heap.heap_item):
 
     def distance(self, other):
         # Gets the distance between two nodes
+        if self.loc is None:
+            return math.inf
         return self.loc.distance(other.loc)
 
     def update(self, h_cost=None, g_cost=None):
@@ -88,10 +98,11 @@ class Map(object):
     def __init__(self, nx, ny):
         self._nx = nx
         self._ny = ny
-        self.node_map = [Node(0, 0, None) for i in range(nx*ny)]
+        self.node_map = [Node() for i in range(nx*ny)]
         for i, node in enumerate(self.node_map):
             node.cell = i
             node.loc = Point(*self._from_cell(i), 0)
+            node.neighbors = self.get_neighbors(node)
         self.plt, self.ax = None, None
         self.lastFig = 0
         self.orig, self.targ = None,None
@@ -129,7 +140,7 @@ class Map(object):
             if i in pathCells:
                 pltArr[i] = 5
             if nSet > 1:
-                raise ValueError("RuhRoh...too many attempts to set")
+                raise ValueError("Cell set more than one time for valid/hit/processed")
 
         # Set the origin and target points
         if self.orig is not None:
@@ -237,25 +248,28 @@ class PathFinding:
         print ("Taget:", target.loc)
 
         self.graph.set_pts(orig=start, targ=target)
-        self.graph.draw()
+        if DRAW_PROGRESS:
+            self.graph.draw()
 
         open_set = binary_heap.min_heap()
         closed_set = []
         open_set.append(start)
         curNode = None
-        count = 0
+        solutionFound = False
         while len(open_set):
             curNode = open_set.remove_first() 
             closed_set.append(curNode)
 
-            path = self._get_path(curNode)
-            self.graph.draw(open=open_set, closed=closed_set, path=path)
+            if DRAW_PROGRESS:
+                path = self._get_path(curNode)
+                self.graph.draw(open=open_set, closed=closed_set, path=path)
 
             if curNode is target:
                 print ("Found the end of the yellow brick road!")
+                solutionFound = True
                 break
 
-            for neighbor in self.graph.get_neighbors(curNode):
+            for neighbor in curNode.neighbors:
                 if not neighbor.walkable or neighbor in closed_set:
                     continue
 
@@ -269,20 +283,20 @@ class PathFinding:
                     else:
                         open_set.update_item(neighbor)
 
-        # Build Path
-        result = self._get_path(curNode)
+        if solutionFound:
+            # Build Path
+            result = self._get_path(curNode)
 
-        result[0] = start
-        result[0].loc = a
-        result[-1] = target
-        result[-1].loc = b
+            result[0] = start
+            result[0].loc = a
+            result[-1] = target
+            result[-1].loc = b
 
-        for node in result:
-            print (node.loc)
-        return [node.loc for node in result]
+            return [node.loc for node in result]
+        else:
+            return []
 
 def main():
-
 
     board = Map(11, 6)
     board.set_cell(3,4,False)
@@ -297,18 +311,20 @@ def main():
     b = Point(4, 4, 0)
     res = pather.find_path(a, b)
 
-    x, y = [],[]
-    for pt in res:
-        x.append(pt.x)
-        y.append(pt.y)
+    if DRAW_PROGRESS:
+        system('"C:/Program Files/ImageMagick-7.0.7-Q16/magick.exe" convert *.png test.gif')
+        x, y = [],[]
+        for pt in res:
+            x.append(pt.x)
+            y.append(pt.y)
 
-    y.reverse()
-    x.reverse()
-    plt.plot(x, y)
-    plt.plot(a.x, a.y, b.x, b.y, marker='o', color='red')
+        y.reverse()
+        x.reverse()
+        plt.plot(x, y)
+        plt.plot(a.x, a.y, b.x, b.y, marker='o', color='red')
 
-    plt.axis([int(min(x)-1.5), int(max(x) + 1.5), int(min(y)-1.5), int(max(y)+1.5)])
-    plt.show()
+        plt.axis([int(min(x)-1.5), int(max(x) + 1.5), int(min(y)-1.5), int(max(y)+1.5)])
+        # plt.show()
    
 if __name__ == '__main__':
     main()
