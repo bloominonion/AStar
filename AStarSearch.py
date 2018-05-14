@@ -33,32 +33,43 @@ class Point(object):
 
 class Node(binary_heap.heap_item):
     ''' Node class for searching with using A* algorithm. '''
-    def __init__(self, pt=None):
+    def __init__(self, pt=None, dist_func=None, data=None):
         self.loc = pt
-        self.cell = None
+        self.data = data
         self.g_cost = 0
         self.h_cost = math.inf
         self.prev_node = None
-        self.neighbors = []
+        self._neighbors = []
+        self.dist_func = None
+        if dist_func is not None:
+            self.dist_func = dist_func
         super(Node, self).__init__()
 
     def __eq__(self, other):
         # Compare two nodes
+        if self.loc is None or other.loc is None:
+            if self.data is not None and other.data is not None:
+                return self.data == other.data
+            return False
         return self.loc == other.loc 
 
     def __str__(self):
         return dedent('''
-                        Cell   : {} ({})
                         Useable: {}
                         g_cost : {}
                         h_cost : {}
-                      '''.format(self.cell, self.loc, self.walkable, self.g_cost, self.h_cost))
+                      '''.format(self.walkable, self.g_cost, self.h_cost))
 
-    def add_neighbor(self, neighbor):
-        if isinstance(neighbor, Node):
-            self.neighbors.append(neighbor)
+    def get_neighbors(self):
+        if callable(self._neighbors):
+            return self._neighbors(self)
         else:
-            raise TypeError("Neighbors must be of the same type.")
+            return self._neighbors
+
+    def set_neighbors(self, neigh):
+        self._neighbors = neigh
+
+    neighbors = property(get_neighbors, set_neighbors)
 
     def set_useable(self, value):
         # Sets a node's usability
@@ -70,6 +81,8 @@ class Node(binary_heap.heap_item):
 
     def distance(self, other):
         # Gets the distance between two nodes
+        if self.dist_func is not None:
+            return self.dist_func(self,other)
         if self.loc is None:
             return math.inf
         return self.loc.distance(other.loc)
@@ -124,7 +137,7 @@ class PathFinding:
                 path = self._get_path(curNode)
                 self.draw(open=open_set, closed=closed_set, path=path)
 
-            if curNode is end:
+            if curNode == end:
                 print ("Found the end of the yellow brick road!")
                 solutionFound = True
                 break
@@ -149,7 +162,39 @@ class PathFinding:
             return []
 
 def main():
-    pass
+    import difflib
+    from itertools import permutations
+    start_string = 'dfaceb'
+    desired_string = 'abcdef'
+    opts = []
+    str_perm = set([''.join(p) for p in permutations(start_string)])
+
+    def dist(self, other):
+        delta = difflib.SequenceMatcher(None, self.data, other.data)
+        return len(delta.get_matching_blocks())
+
+    def get_neighbors(node):
+        idx = opts.index(node)
+        if idx == 0:
+            return [opts[idx+1]]
+        if idx == len(opts)-1:
+            return [opts[idx-1]]
+        return [opts[idx-1], opts[idx+1]]
+
+    for perm in str_perm:
+        opts.append(Node(data=perm, dist_func=dist))
+        opts[-1].neighbors = get_neighbors
+
+
+    a = Node(data=start_string, dist_func=dist)
+    b = Node(data=desired_string, dist_func=dist)
+
+    a.neighbors = get_neighbors
+
+    pather = PathFinding()
+    res = pather.find_path(a, b)
+    print ("Result")
+    [print (node.data) for node in res]
    
 if __name__ == '__main__':
     main()

@@ -25,7 +25,7 @@ class Map(object):
         self._ny = ny
         self.node_map = [Node() for i in range(nx*ny)]
         for i, node in enumerate(self.node_map):
-            node.cell = i
+            node.data = i
             node.loc = Point(*self._from_cell(i), 0)
             node.neighbors = self.get_neighbors(node)
         self.plt, self.ax = None, None
@@ -47,11 +47,11 @@ class Map(object):
         openCells, closedCells, pathCells = [], [], []
 
         if open is not None:
-            openCells = sorted([open[i].cell for i in range(len(open))])
+            openCells = sorted([open[i].data for i in range(len(open))])
         if closed is not None:
-            closedCells = sorted([x.cell for x in closed])
+            closedCells = sorted([x.data for x in closed])
         if path is not None:                
-            pathCells = sorted([x.cell for x in path])
+            pathCells = sorted([x.data for x in path])
         pltArr = numpy.array(numpy.zeros(len(self.node_map)))
         for i, node in enumerate(self.node_map):
             nSet = 0
@@ -71,9 +71,9 @@ class Map(object):
 
         # Set the origin and target points
         if self.orig is not None:
-            pltArr[self.orig.cell] = 9
+            pltArr[self.orig.data] = 9
         if self.targ is not None:
-            pltArr[self.targ.cell] = 10
+            pltArr[self.targ.data] = 10
         
         lg = max(self._nx, self._ny)
         newSz = (int((self._ny/lg)*500), int((self._nx/lg)*500))
@@ -126,7 +126,7 @@ class Map(object):
 
     def get_neighbors(self, node:Node):
         # Gets the neighbors of a given node.
-        x0, y0 = self._from_cell(node.cell)
+        x0, y0 = self._from_cell(node.data)
         xran = [self._clamp(0,self._nx-1, x0-1), self._clamp(0, self._nx-1, x0+1)]
         yran = [self._clamp(0,self._ny-1, y0-1), self._clamp(0, self._ny-1, y0+1)]
         neigh = []
@@ -145,7 +145,7 @@ class Map(object):
         return self.node_map[cell]
 
 
-def main():
+def test_board():
     board = Map(11, 6)
     board.set_cell(3,4,False)
     board.set_cell(3,3,False)
@@ -186,4 +186,4 @@ def main():
         # plt.show()
    
 if __name__ == '__main__':
-    main()
+    test_board()
