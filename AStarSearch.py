@@ -34,6 +34,7 @@ class Point(object):
 class Node(binary_heap.heap_item):
     ''' Node class for searching with using A* algorithm. '''
     def __init__(self, pt=None, dist_func=None, data=None):
+        super(Node, self).__init__()
         self.loc = pt
         self.data = data
         self.g_cost = 0
@@ -43,7 +44,6 @@ class Node(binary_heap.heap_item):
         self.dist_func = None
         if dist_func is not None:
             self.dist_func = dist_func
-        super(Node, self).__init__()
 
     def __eq__(self, other):
         # Compare two nodes
@@ -58,7 +58,11 @@ class Node(binary_heap.heap_item):
                         Useable: {}
                         g_cost : {}
                         h_cost : {}
-                      '''.format(self.walkable, self.g_cost, self.h_cost))
+                        loc    : {}
+                        data   : {}
+                        prev   : {}
+                      '''.format(self.walkable, self.g_cost, self.h_cost,
+                                 self.loc, self.data, self.prev_node))
 
     def get_neighbors(self):
         if callable(self._neighbors):
@@ -98,14 +102,11 @@ class Node(binary_heap.heap_item):
 
 class PathFinding:
     def __init__(self, draw_callback=None):
-        self.no_draw = True
+        self.draw = None
         if draw_callback is not None:
             if not callable(draw_callback):
                 raise TypeError("draw_callback must be callable.")
             self.draw = draw_callback
-            self.no_draw = False
-        else:
-            self.draw = lambda *args, **kwargs:None
 
     def _get_path(self, lastNode):
         result = [] 
@@ -121,7 +122,7 @@ class PathFinding:
         return [node.loc for node in path]
 
     def find_path(self, begin:Node, end:Node):
-        if not self.no_draw:
+        if self.draw is not None:
             self.draw()
 
         open_set = binary_heap.min_heap()
@@ -133,7 +134,7 @@ class PathFinding:
             curNode = open_set.remove_first() 
             closed_set.append(curNode)
 
-            if not self.no_draw:
+            if self.draw is not None:
                 path = self._get_path(curNode)
                 self.draw(open=open_set, closed=closed_set, path=path)
 

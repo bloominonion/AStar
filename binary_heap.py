@@ -9,6 +9,7 @@ class heap_item(object):
         self._index = None
         self._value = value
         self.walkable = True
+        self.data = None
 
     def __str__(self):
         if self._value is None:
