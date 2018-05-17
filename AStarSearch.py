@@ -39,6 +39,7 @@ class Node(binary_heap.heap_item):
         self.data = data
         self.g_cost = 0
         self.h_cost = math.inf
+        self.penalty = 0
         self.prev_node = None
         self._neighbors = []
         self.dist_func = None
@@ -147,7 +148,7 @@ class PathFinding:
                 if not neighbor.walkable or neighbor in closed_set:
                     continue
 
-                new_cost = curNode.g_cost + curNode.distance(neighbor)
+                new_cost = curNode.g_cost + curNode.distance(neighbor) + neighbor.penalty
                 if new_cost < neighbor.g_cost or not open_set.contains(neighbor):
                     neighbor.update(g_cost=new_cost, h_cost=neighbor.distance(end))
                     neighbor.prev_node = curNode
